@@ -5,7 +5,7 @@ library(gridExtra)
 library(ggplot2)
 #library(markdown)
 #library(knitr)
-##source("helpers.R")
+source("helpers.R")
 # 
 # load("data/quant1.RData")
 # load("data/quant2.RData")
@@ -200,8 +200,8 @@ shinyUI(navbarPage("Intro Stat Apps", id="top-nav", collapsible=TRUE,
       ),
       
       tabPanel("Test", value="2catTest",
-               uiOutput('cat2_testUI')
-               ),
+               uiOutput('cat2_testUI') 
+              ),
       
       tabPanel("Estimate", value="2catEstimate",
                uiOutput('cat2_estimateUI')

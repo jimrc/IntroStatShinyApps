@@ -422,13 +422,13 @@ output$quant1DataIn <- renderText({ "How would you like to input the data? "
     names(DF)[ncol(DF)] <- "x"
     ## make plot
     q1_plot1 <- 
-      qplot(x = x, y=x, data = DF,  geom ="boxplot") + theme_bw() + xlab("") + ylab(q1$names) + 
+      qplot(x = x, y = x, data = DF,  geom ="boxplot") + theme_bw() + xlab("") + ylab(q1$names) + 
                   scale_x_continuous(breaks = c(-1,1000)) +  coord_flip()
     #par(mar=c(24, 40, 10, 35)/10, mfrow=c(2,1))
     #boxplot(q1_dataDF, horizontal = TRUE, main = "")
     # Plot stacked x values. 
     x <- sort(q1$data[,1])
-    ## print(x)
+    #print(x)
     z <- cut(x, breaks = nclass.Sturges(x) ^2 )
     w <- unlist(tapply(x, z, function(x) 1:length(x)))
     tempDF <- data.frame(x, w=w[!is.na(w)])
@@ -672,7 +672,6 @@ output$cat2_testUI <- renderUI({
            tabPanel("Test", value="2catTest",
                     titlePanel("Test for a Difference in Proportions"),       
                     fluidRow(
-                      fluidRow(
                         column(3, 
                                h3("Original Data"),
                                tableOutput("cat2OriginalData")),
@@ -684,11 +683,16 @@ output$cat2_testUI <- renderUI({
                                actionButton("cat2_shuffle_100", label = "100"),
                                actionButton("cat2_shuffle_1000", label = "1000"),
                                actionButton("cat2_shuffle_5000", label = "5000"))
-                      ),
-                      column(4, plotOutput("cat2Test", width = "90%") 
-                      ))
-           )
-    
+                    ),
+                      
+                    hr(),
+                      fluidRow(
+                        column(8, 
+                               plotOutput('cat2Test'))
+                        #column(3, 
+                        #tableOutput('q1_Summary'))
+                      )
+                      )
   }
 })
 
@@ -703,7 +707,7 @@ output$cat2OriginalData <- renderTable({
   #})
 })
 
-cat2 <- reactiveValues(data=NULL, names=NULL)
+cat2test <- reactiveValues(data=NULL)
 
 observeEvent(input$cat2_shuffle_1, {
   counts <- as.table(matrix(cat2_data$counts, 2, 2))
@@ -715,7 +719,7 @@ observeEvent(input$cat2_shuffle_1, {
   
   DF <- cat2_gen_shuffles(shuffles = 1, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2$data <- rbind(cat2$data, DF)
+  cat2test$data <- rbind(cat2test$data, DF)
 })
 
 observeEvent(input$cat2_shuffle_10, {
@@ -729,7 +733,7 @@ observeEvent(input$cat2_shuffle_10, {
   
   DF <- cat2_gen_shuffles(shuffles = 10, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2$data <- rbind(cat2$data, DF)
+  cat2test$data <- rbind(cat2test$data, DF)
 })
 
 observeEvent(input$cat2_shuffle_100, {
@@ -743,7 +747,7 @@ observeEvent(input$cat2_shuffle_100, {
   
   DF <- cat2_gen_shuffles(shuffles = 100, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2$data <- rbind(cat2$data, DF)
+  cat2test$data <- rbind(cat2test$data, DF)
 })
 
 observeEvent(input$cat2_shuffle_1000, {
@@ -757,7 +761,7 @@ observeEvent(input$cat2_shuffle_1000, {
   
   DF <- cat2_gen_shuffles(shuffles = 1000, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2$data <- rbind(cat2$data, DF)
+  cat2test$data <- rbind(cat2test$data, DF)
 })
 
 observeEvent(input$cat2_shuffle_5000, {
@@ -771,20 +775,40 @@ observeEvent(input$cat2_shuffle_5000, {
   
   DF <- cat2_gen_shuffles(shuffles = 5000, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2$data <- rbind(cat2$data, DF)
+  cat2test$data <- rbind(cat2test$data, DF)
 })
-
-#head(cat2$data)
 
 output$cat2Test <- renderPlot({
   if(input$cat2_submitButton == 0) return()
   if(input$cat2_shuffle_1 == 0 & input$cat2_shuffle_10 == 0 & 
      input$cat2_shuffle_100 == 0 & input$cat2_shuffle_1000 == 0 &
      input$cat2_shuffle_5000 == 0) return()
-  ##  Make plot
-  x <- sort(cat2$data[,1])
-  hist(cat2$data[,1], main = "", xlab = "Difference in p hats")
-}, height=360)
+  
+  DF <- as.data.frame(cat2test$data)
+  #print(class(DF))
+  names(DF)[ncol(DF)] <- "x"
+  
+  # Firt Plot
+  cat2test_plot1 <- qplot(x = x, y = x, data = DF,  geom ="boxplot") + theme_bw() + xlab("") + ylab("") + 
+    scale_x_continuous(breaks = c(-1,1000)) +  coord_flip()
+  
+  # Plot stacked x values. 
+  x <- sort(cat2test$data[,1])
+  ## print(x)
+  z <- cut(x, breaks = nclass.Sturges(x) ^2)
+  w <- unlist(tapply(x, z, function(x) 1:length(x)))
+  tempDF <- data.frame(x, w = w[!is.na(w)])
+  myBlue <- rgb(0, 100/256, 224/256, alpha = .8)  
+  cat2test_plot2 <- qplot(data = tempDF, x = x, y = w, colour = I(myBlue), size = I(4), main("Sampling Distribution")) + 
+              theme_bw()
+  
+#   cat2test_plot2_summary <- legend("topleft", bty="n", paste("n = ", length(DF),"\n Mean = ", round(mean(DF),3),
+#                                    "\n SE = ", round(sd(DF), 3)))
+
+  # Arrange the two plots on the page
+  grid.arrange(cat2test_plot1, cat2test_plot2, heights = c(1,3)/4, ncol=1)
+  
+  }, height=360)
 }
 
   ###  cat2 --  estimate difference in proportions --------------------- cat 2

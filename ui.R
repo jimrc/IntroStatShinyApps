@@ -5,7 +5,7 @@ library(gridExtra)
 library(ggplot2)
 #library(markdown)
 #library(knitr)
-source("helpers.R")
+##source("helpers.R")
 # 
 # load("data/quant1.RData")
 # load("data/quant2.RData")

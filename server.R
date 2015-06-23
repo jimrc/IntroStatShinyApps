@@ -686,12 +686,33 @@ output$cat2_testUI <- renderUI({
                     ),
                       
                     hr(),
+                    fluidRow(
+                        column(8, plotOutput('cat2Test')),
+                        column(3, tableOutput('cat2Test_Summary'))
+                      ), 
+                    fluidRow(
+                        column(2, offset = 3, 
+                               h4("Count values ")), 
+                        column(3, 
+                               selectInput('cat2_testDirection', label = "", 
+                                           choices = list("less", "more extreme", "greater"), 
+                                           selected = "more extreme", selectize = FALSE, width = 200)
+                               ), 
+                        column(1, h4(" than ")),
+                        column(2, 
+                               numericInput('cat2_cutoff', label = "", value = NA)
+                               ), 
+                        column(1, 
+                               actionButton('cat2_countXtremes', "Go")
+                               )
+                    ), 
+                    if(!is.null(cat2Test$moreExtremeCount)){
                       fluidRow(
-                        column(8, 
-                               plotOutput('cat2Test'))
-                        #column(3, 
-                        #tableOutput('q1_Summary'))
+                        column(6, offset = 6, 
+                               h4(paste(cat2Test$moreExtremeCount, " / ", length(cat2Test$difprop), ", p-value = ", 
+                                        round(cat2Test$pvalue, 5))))
                       )
+                    }
                       )
   }
 })
@@ -707,7 +728,8 @@ output$cat2OriginalData <- renderTable({
   #})
 })
 
-cat2test <- reactiveValues(data=NULL)
+cat2Test <- reactiveValues(difprop = NULL, phat1 = NULL, phat2 = NULL, observed = NULL, colors = NULL,
+                           moreExtremeCount = NULL, pvalue = NULL)
 
 observeEvent(input$cat2_shuffle_1, {
   counts <- as.table(matrix(cat2_data$counts, 2, 2))
@@ -719,7 +741,10 @@ observeEvent(input$cat2_shuffle_1, {
   
   DF <- cat2_gen_shuffles(shuffles = 1, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2test$data <- rbind(cat2test$data, DF)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
+  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  
 })
 
 observeEvent(input$cat2_shuffle_10, {
@@ -733,7 +758,11 @@ observeEvent(input$cat2_shuffle_10, {
   
   DF <- cat2_gen_shuffles(shuffles = 10, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2test$data <- rbind(cat2test$data, DF)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
+  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  
+  print(cat2Test$difprop)
 })
 
 observeEvent(input$cat2_shuffle_100, {
@@ -747,7 +776,9 @@ observeEvent(input$cat2_shuffle_100, {
   
   DF <- cat2_gen_shuffles(shuffles = 100, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2test$data <- rbind(cat2test$data, DF)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
+  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
 })
 
 observeEvent(input$cat2_shuffle_1000, {
@@ -761,7 +792,9 @@ observeEvent(input$cat2_shuffle_1000, {
   
   DF <- cat2_gen_shuffles(shuffles = 1000, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2test$data <- rbind(cat2test$data, DF)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
+  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
 })
 
 observeEvent(input$cat2_shuffle_5000, {
@@ -775,7 +808,9 @@ observeEvent(input$cat2_shuffle_5000, {
   
   DF <- cat2_gen_shuffles(shuffles = 5000, phat_m = phat_m,
                           y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2test$data <- rbind(cat2test$data, DF)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
+  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
 })
 
 output$cat2Test <- renderPlot({
@@ -784,31 +819,73 @@ output$cat2Test <- renderPlot({
      input$cat2_shuffle_100 == 0 & input$cat2_shuffle_1000 == 0 &
      input$cat2_shuffle_5000 == 0) return()
   
-  DF <- as.data.frame(cat2test$data)
-  #print(class(DF))
-  names(DF)[ncol(DF)] <- "x"
+  DF <- as.data.frame(cat2Test$difprop)
+  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  names(DF)[ncol(DF)] <- "Diff in Proportions"
   
   # Firt Plot
-  cat2test_plot1 <- qplot(x = x, y = x, data = DF,  geom ="boxplot") + theme_bw() + xlab("") + ylab("") + 
+  cat2Test_plot1 <- qplot(x = x, y = x, data = DF,  geom ="boxplot") + theme_bw() + xlab("") + ylab("") + 
     scale_x_continuous(breaks = c(-1,1000)) +  coord_flip()
   
   # Plot stacked x values. 
-  x <- sort(cat2test$data[,1])
-  ## print(x)
-  z <- cut(x, breaks = nclass.Sturges(x) ^2)
-  w <- unlist(tapply(x, z, function(x) 1:length(x)))
-  tempDF <- data.frame(x, w = w[!is.na(w)])
-  myBlue <- rgb(0, 100/256, 224/256, alpha = .8)  
-  cat2test_plot2 <- qplot(data = tempDF, x = x, y = w, colour = I(myBlue), size = I(4), main("Sampling Distribution")) + 
-              theme_bw()
+  x <- sort(DF[,1])
   
-#   cat2test_plot2_summary <- legend("topleft", bty="n", paste("n = ", length(DF),"\n Mean = ", round(mean(DF),3),
-#                                    "\n SE = ", round(sd(DF), 3)))
-
+  ## Having trouble getting to print a single shuffle, keeps saying:
+  ## Error in cut.default(x, breaks = nbreaks) : invalid number of intervals
+  ## Added ifelse statement to fix
+  ifelse(length(x) == 1, 
+         {  myBlue <- rgb(0, 100/256, 224/256, alpha = .8)
+            cat2Test_plot2 <- qplot(data = DF, x = x, y = x, colour = I(myBlue), size = I(4), 
+                                 main("Sampling Distribution")) + theme_bw()
+          }, 
+         {  nbreaks <- min(c(length(unique(x)), nclass.Sturges(x)^2))
+            z <- cut(x, breaks = nbreaks)
+            w <- unlist(tapply(x, z, function(x) 1:length(x)))
+            tempDF <- data.frame(x, w = w[!is.na(w)])
+            myBlue <- rgb(0, 100/256, 224/256, alpha = .8)  
+            cat2Test_plot2 <- qplot(data = tempDF, x = x, y = w, colour = I(myBlue), size = I(4), 
+                                    main("Sampling Distribution")) + theme_bw()
+           }
+    )
+  
   # Arrange the two plots on the page
-  grid.arrange(cat2test_plot1, cat2test_plot2, heights = c(1,3)/4, ncol=1)
+  grid.arrange(cat2Test_plot1, cat2Test_plot2, heights = c(1,3)/4, ncol=1)
   
   }, height=360)
+
+
+  output$cat2Test_Summary <- renderTable({
+    if( is.null(cat2Test$difprop))  
+      return()
+    DF <- rbind(mean = mean(cat2Test$difprop[, 1], na.rm = TRUE ),
+                sd = sd(cat2Test$difprop[, 1], na.rm = TRUE),
+                min = min(cat2Test$difprop[, 1]),
+                Q1 = quantile(cat2Test$difprop[, 1], .25),
+                median = median(cat2Test$difprop[, 1]),
+                Q3 = quantile(cat2Test$difprop[, 1], .75),
+                max = max(cat2Test$difprop[, 1]),
+                length = length(cat2Test$difprop[, 1]))
+    colnames(DF) <- "Diff in Proportions"
+    DF
+    #})
+  })
+
+  observeEvent(input$cat2_countXtremes, {
+    x <- sort(cat2Test$diffprop)
+    nsims <- length(x)
+    threshold <- as.numeric(input$cat2_cutoff)
+    if(nsims > 0 & !is.na(input$cat2_testDirection)){
+      redValues <-  switch( input$cat2_testDirection,
+                            "less" = which(x <= threshold + 1.0e-10),
+                            "greater" = which(x >= threshold - 1.0e-10),
+                            "more extreme" = c(which(x <= -abs(threshold) + 1.0e-10 ), 
+                                               which(x >= abs(threshold) -1.0e-10 ) )  )
+      cat2Test$colors[redValues] <- rd       
+      cat2Test$moreExtremeCount  <- length(redValues)
+      cat2Test$pvalue <- cat2Test$moreExtremeCount/nsims
+    }
+  })  
+  
 }
 
   ###  cat2 --  estimate difference in proportions --------------------- cat 2
@@ -1174,7 +1251,7 @@ output$q2_TestPlot1 <- renderPlot({
 }, height = 400, width = 300)
 
 observeEvent(input$q2_shuffle_10, {
-  newShuffles <- t( sapply(1:10, function(x) sample(1:nrow(q2$data))))
+  newShuffles <- t(sapply(1:10, function(x) sample(1:nrow(q2$data))))
   q2Test$shuffles <- rbind(q2Test$shuffles, newShuffles)
  q2Test$slopes <- c(q2Test$slopes, apply(newShuffles, 1, function(x) qr.coef(q2$qr, q2$data[x, 2])[2]))
  q2Test$corr <- c(q2Test$corr, apply(newShuffles, 1, function(ndx) cor(q2$data$x, q2$data[ndx, 2])))

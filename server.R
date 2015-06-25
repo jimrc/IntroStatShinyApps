@@ -687,7 +687,7 @@ output$cat2_testUI <- renderUI({
                       
                     hr(),
                     fluidRow(
-                        column(8, plotOutput('cat2Test')),
+                        column(8, plotOutput('cat2Test_Plot')),
                         column(3, tableOutput('cat2Test_Summary'))
                       ), 
                     fluidRow(
@@ -717,19 +717,16 @@ output$cat2_testUI <- renderUI({
   }
 })
 
+cat2Test <- reactiveValues(difprop = NULL, phat1 = NULL, phat2 = NULL, observed = NULL, colors = NULL,
+                           moreExtremeCount = NULL, pvalue = NULL)
+
 output$cat2OriginalData <- renderTable({ 
   if(input$cat2_submitButton ==0) return()
-  #isolate({
-  #  cat2_dataDF <- cat2_data()
-  counts <- as.table( matrix(cat2_data$counts, 2, 2))
+  counts <- as.table(matrix(cat2_data$counts, 2, 2))
   colnames(counts) <- cat2_data$names[1:2]
   rownames(counts) <- cat2_data$groups[c(1,3)]
   round(t(prop.table(counts, 1)), 3)
-  #})
 })
-
-cat2Test <- reactiveValues(difprop = NULL, phat1 = NULL, phat2 = NULL, observed = NULL, colors = NULL,
-                           moreExtremeCount = NULL, pvalue = NULL)
 
 observeEvent(input$cat2_shuffle_1, {
   counts <- as.table(matrix(cat2_data$counts, 2, 2))
@@ -737,14 +734,14 @@ observeEvent(input$cat2_shuffle_1, {
   n1 <- counts[1,1] + counts[1,2]
   y2 <- counts[2,1]
   n2 <- counts[2,1] + counts[2,2]
-  phat_m <- (y1 + y2)/(n1 + n2)
   
-  DF <- cat2_gen_shuffles(shuffles = 1, phat_m = phat_m,
-                          y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
-  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
-  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
-  
+  DF <- cat2_gen_shuffles(shuffles = 1, y1=y1, y2=y2, n1=n1, n2=n2)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF)
+  #cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  #cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  cat2Test$observed <- y1/n1 - y2/n2
+
 })
 
 observeEvent(input$cat2_shuffle_10, {
@@ -754,15 +751,13 @@ observeEvent(input$cat2_shuffle_10, {
   n1 <- counts[1,1] + counts[1,2]
   y2 <- counts[2,1]
   n2 <- counts[2,1] + counts[2,2]
-  phat_m <- (y1 + y2)/(n1 + n2)
+  DF <- cat2_gen_shuffles(shuffles = 10, y1=y1, y2=y2, n1=n1, n2=n2)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF)
+  #cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  #cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  cat2Test$observed <- y1/n1 - y2/n2
   
-  DF <- cat2_gen_shuffles(shuffles = 10, phat_m = phat_m,
-                          y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
-  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
-  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
-  
-  print(cat2Test$difprop)
 })
 
 observeEvent(input$cat2_shuffle_100, {
@@ -772,13 +767,12 @@ observeEvent(input$cat2_shuffle_100, {
   n1 <- counts[1,1] + counts[1,2]
   y2 <- counts[2,1]
   n2 <- counts[2,1] + counts[2,2]
-  phat_m <- (y1 + y2)/(n1 + n2)
-  
-  DF <- cat2_gen_shuffles(shuffles = 100, phat_m = phat_m,
-                          y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
-  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
-  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  DF <- cat2_gen_shuffles(shuffles = 100, y1=y1, y2=y2, n1=n1, n2=n2)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF)
+  #cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  #cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  cat2Test$observed <- y1/n1 - y2/n2
 })
 
 observeEvent(input$cat2_shuffle_1000, {
@@ -788,13 +782,12 @@ observeEvent(input$cat2_shuffle_1000, {
   n1 <- counts[1,1] + counts[1,2]
   y2 <- counts[2,1]
   n2 <- counts[2,1] + counts[2,2]
-  phat_m <- (y1 + y2)/(n1 + n2)
-  
-  DF <- cat2_gen_shuffles(shuffles = 1000, phat_m = phat_m,
-                          y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
-  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
-  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  DF <- cat2_gen_shuffles(shuffles = 1000, y1=y1, y2=y2, n1=n1, n2=n2)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF)
+  #cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  #cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  cat2Test$observed <- y1/n1 - y2/n2
 })
 
 observeEvent(input$cat2_shuffle_5000, {
@@ -804,58 +797,65 @@ observeEvent(input$cat2_shuffle_5000, {
   n1 <- counts[1,1] + counts[1,2]
   y2 <- counts[2,1]
   n2 <- counts[2,1] + counts[2,2]
-  phat_m <- (y1 + y2)/(n1 + n2)
-  
-  DF <- cat2_gen_shuffles(shuffles = 5000, phat_m = phat_m,
-                          y1=y1, y2=y2, n1=n1, n2=n2)
-  cat2Test$difprop <- rbind(cat2Test$difprop, DF[,1])
-  cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
-  cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  DF <- cat2_gen_shuffles(shuffles = 5000, y1=y1, y2=y2, n1=n1, n2=n2)
+  cat2Test$difprop <- rbind(cat2Test$difprop, DF)
+  #cat2Test$phat1 <- rbind(cat2Test$phat1, DF[,2])
+  #cat2Test$phat2 <- rbind(cat2Test$phat2, DF[,3])
+  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  cat2Test$observed <- y1/n1 - y2/n2
 })
 
-output$cat2Test <- renderPlot({
+observeEvent(input$cat2_countXtremes, {
+  x <- sort(cat2Test$difprop)
+  nsims <- length(x)
+  threshold <- as.numeric(input$cat2_cutoff)
+  if(nsims > 1 & !is.na(input$cat2_testDirection)){
+    redValues <-  switch(input$cat2_testDirection,
+                         "less" = which(x <= threshold + 1.0e-10),
+                         "greater" = which(x >= threshold - 1.0e-10),
+                         "more extreme" = c(which(x <= -abs(threshold) + 1.0e-10 ), 
+                                            which(x >= abs(threshold) -1.0e-10 ) )  )
+    cat2Test$colors[redValues] <- rd       
+    cat2Test$moreExtremeCount  <- length(redValues)
+    cat2Test$pvalue <- cat2Test$moreExtremeCount/nsims
+  }
+})
+
+output$cat2Test_Plot <- renderPlot({
   if(input$cat2_submitButton == 0) return()
-  if(input$cat2_shuffle_1 == 0 & input$cat2_shuffle_10 == 0 & 
-     input$cat2_shuffle_100 == 0 & input$cat2_shuffle_1000 == 0 &
-     input$cat2_shuffle_5000 == 0) return()
+  if(is.null(cat2Test$difprop)) return()
   
-  DF <- as.data.frame(cat2Test$difprop)
-  cat2Test$colors <- rep(blu, length(cat2Test$difprop))
+  DF <- cat2Test$difprop
   names(DF)[ncol(DF)] <- "Diff in Proportions"
+  DF <- sort(DF)
+  cat2Test$observed <- 
+  # Plot stacked x values as Sampling Distribution 
   
-  # Firt Plot
-  cat2Test_plot1 <- qplot(x = x, y = x, data = DF,  geom ="boxplot") + theme_bw() + xlab("") + ylab("") + 
-    scale_x_continuous(breaks = c(-1,1000)) +  coord_flip()
-  
-  # Plot stacked x values. 
-  x <- sort(DF[,1])
   
   ## Having trouble getting to print a single shuffle, keeps saying:
   ## Error in cut.default(x, breaks = nbreaks) : invalid number of intervals
   ## Added ifelse statement to fix
-  ifelse(length(x) == 1, 
-         {  myBlue <- rgb(0, 100/256, 224/256, alpha = .8)
-            cat2Test_plot2 <- qplot(data = DF, x = x, y = x, colour = I(myBlue), size = I(4), 
-                                 main("Sampling Distribution")) + theme_bw()
-          }, 
-         {  nbreaks <- min(c(length(unique(x)), nclass.Sturges(x)^2))
-            z <- cut(x, breaks = nbreaks)
-            w <- unlist(tapply(x, z, function(x) 1:length(x)))
-            tempDF <- data.frame(x, w = w[!is.na(w)])
-            myBlue <- rgb(0, 100/256, 224/256, alpha = .8)  
-            cat2Test_plot2 <- qplot(data = tempDF, x = x, y = w, colour = I(myBlue), size = I(4), 
-                                    main("Sampling Distribution")) + theme_bw()
-           }
-    )
-  
-  # Arrange the two plots on the page
-  grid.arrange(cat2Test_plot1, cat2Test_plot2, heights = c(1,3)/4, ncol=1)
-  
+  if(length(DF) == 1){
+         
+    qplot(x = DF, y = DF, #colour = cat2Test$colors, 
+          size = I(4), main("Sampling Distribution")) + theme_bw() +
+                                 xlab("Difference in Proportions") + ylab("")
+          } 
+         else{
+            nbreaks <- min(c(length(unique(DF)), nclass.Sturges(DF)^2))
+            z <- cut(DF, breaks = nbreaks)
+            w <- unlist(tapply(z, z, function(v) 1:length(v)))
+            w <- w[!is.na(w)]
+            qplot(x = DF, y = w, colour = cat2Test$colors, size = I(4), 
+                                    main("Sampling Distribution")) + theme_bw() + 
+                                    xlab("Difference in Proportions") + ylab("")
+            
+        }
   }, height=360)
 
 
   output$cat2Test_Summary <- renderTable({
-    if( is.null(cat2Test$difprop))  
+    if(is.null(cat2Test$difprop))  
       return()
     DF <- rbind(mean = mean(cat2Test$difprop[, 1], na.rm = TRUE ),
                 sd = sd(cat2Test$difprop[, 1], na.rm = TRUE),
@@ -870,21 +870,33 @@ output$cat2Test <- renderPlot({
     #})
   })
 
-  observeEvent(input$cat2_countXtremes, {
-    x <- sort(cat2Test$diffprop)
-    nsims <- length(x)
-    threshold <- as.numeric(input$cat2_cutoff)
-    if(nsims > 0 & !is.na(input$cat2_testDirection)){
-      redValues <-  switch( input$cat2_testDirection,
-                            "less" = which(x <= threshold + 1.0e-10),
-                            "greater" = which(x >= threshold - 1.0e-10),
-                            "more extreme" = c(which(x <= -abs(threshold) + 1.0e-10 ), 
-                                               which(x >= abs(threshold) -1.0e-10 ) )  )
-      cat2Test$colors[redValues] <- rd       
-      cat2Test$moreExtremeCount  <- length(redValues)
-      cat2Test$pvalue <- cat2Test$moreExtremeCount/nsims
-    }
-  })  
+#   output$cat_TestPlot2 <- renderPlot({
+#     if(is.null( q2Test$shuffles) )
+#       return() 
+#     if(input$q2_TestParam == "Slope") {
+#       parm <-  q2Test$slopes
+#       q2Test$observed <- q2$slope
+#     } else { 
+#       parm <- q2Test$corr
+#       q2Test$observed <- q2$corr
+#     }
+#     parm <- sort(parm)
+#     if(length(parm) == 1){
+#       y <- .5
+#       radius <- 4
+#     } else {
+#       z <- cut(parm, breaks = .5 * nclass.Sturges(parm)^2 )
+#       y <- unlist(tapply(z, z, function(v) 1:length(v)))
+#       y <-  y[!is.na(y)]
+#       q2Test$y <- y
+#       nsims <- length(parm)
+#       radius = 2 + (nsims < 5000) + (nsims < 1000) + (nsims < 500) + (nsims < 100)         
+#     }
+#     plot(parm, y, ylab = "", cex = radius/2, pch = 16, col = q2Test$colors,  
+#          xlab = ifelse(input$q2_TestParam == "Slope", "Slope", "Correlation"), main = "Sampling Distribution")
+#     legend("topleft", bty="n", paste(" n = ", length(parm),"\n Mean = ", round(mean(parm),3),
+#                                      "\n SE = ", round(sd(parm), 3)))
+#   }, height = 400, width = 400)
   
 }
 

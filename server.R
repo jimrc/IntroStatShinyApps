@@ -688,10 +688,11 @@ output$cat2_testUI <- renderUI({
                     hr(),
                     fluidRow(
                         column(8, plotOutput('cat2Test_Plot')),
-                        column(3, tableOutput('cat2Test_Summary'))
+                        column(4, tableOutput('cat2Test_Summary'))
                       ), 
+                    hr(),
                     fluidRow(
-                        column(2, offset = 3, 
+                        column(2, offset = 2, 
                                h4("Count values ")), 
                         column(3, 
                                selectInput('cat2_testDirection', label = "", 
@@ -821,38 +822,6 @@ observeEvent(input$cat2_countXtremes, {
   }
 })
 
-output$cat2Test_Plot <- renderPlot({
-  if(input$cat2_submitButton == 0) return()
-  if(is.null(cat2Test$difprop)) return()
-  
-  DF <- cat2Test$difprop
-  names(DF)[ncol(DF)] <- "Diff in Proportions"
-  DF <- sort(DF)
-  cat2Test$observed <- 
-  # Plot stacked x values as Sampling Distribution 
-  
-  
-  ## Having trouble getting to print a single shuffle, keeps saying:
-  ## Error in cut.default(x, breaks = nbreaks) : invalid number of intervals
-  ## Added ifelse statement to fix
-  if(length(DF) == 1){
-         
-    qplot(x = DF, y = DF, #colour = cat2Test$colors, 
-          size = I(4), main("Sampling Distribution")) + theme_bw() +
-                                 xlab("Difference in Proportions") + ylab("")
-          } 
-         else{
-            nbreaks <- min(c(length(unique(DF)), nclass.Sturges(DF)^2))
-            z <- cut(DF, breaks = nbreaks)
-            w <- unlist(tapply(z, z, function(v) 1:length(v)))
-            w <- w[!is.na(w)]
-            qplot(x = DF, y = w, colour = cat2Test$colors, size = I(4), 
-                                    main("Sampling Distribution")) + theme_bw() + 
-                                    xlab("Difference in Proportions") + ylab("")
-            
-        }
-  }, height=360)
-
 
   output$cat2Test_Summary <- renderTable({
     if(is.null(cat2Test$difprop))  
@@ -865,38 +834,32 @@ output$cat2Test_Plot <- renderPlot({
                 Q3 = quantile(cat2Test$difprop[, 1], .75),
                 max = max(cat2Test$difprop[, 1]),
                 length = length(cat2Test$difprop[, 1]))
-    colnames(DF) <- "Diff in Proportions"
+    colnames(DF) <- "Difference in Proportions"
     DF
     #})
   })
 
-#   output$cat_TestPlot2 <- renderPlot({
-#     if(is.null( q2Test$shuffles) )
-#       return() 
-#     if(input$q2_TestParam == "Slope") {
-#       parm <-  q2Test$slopes
-#       q2Test$observed <- q2$slope
-#     } else { 
-#       parm <- q2Test$corr
-#       q2Test$observed <- q2$corr
-#     }
-#     parm <- sort(parm)
-#     if(length(parm) == 1){
-#       y <- .5
-#       radius <- 4
-#     } else {
-#       z <- cut(parm, breaks = .5 * nclass.Sturges(parm)^2 )
-#       y <- unlist(tapply(z, z, function(v) 1:length(v)))
-#       y <-  y[!is.na(y)]
-#       q2Test$y <- y
-#       nsims <- length(parm)
-#       radius = 2 + (nsims < 5000) + (nsims < 1000) + (nsims < 500) + (nsims < 100)         
-#     }
-#     plot(parm, y, ylab = "", cex = radius/2, pch = 16, col = q2Test$colors,  
-#          xlab = ifelse(input$q2_TestParam == "Slope", "Slope", "Correlation"), main = "Sampling Distribution")
-#     legend("topleft", bty="n", paste(" n = ", length(parm),"\n Mean = ", round(mean(parm),3),
-#                                      "\n SE = ", round(sd(parm), 3)))
-#   }, height = 400, width = 400)
+  output$cat2Test_Plot <- renderPlot({
+    if(input$cat2_submitButton == 0) return()
+    if(is.null(cat2Test$difprop)) return()
+    
+    DF <- sort(cat2Test$difprop)
+    
+    if(length(DF) == 1){
+      w <- .5
+      radius <- 4
+    } else {
+      
+      nbreaks <- min(c(length(unique(DF)), nclass.Sturges(DF)^2))
+      z <- cut(DF, breaks = nbreaks)
+      w <- unlist(tapply(z, z, function(DF) 1:length(DF)))
+      w <- w[!is.na(w)]
+      nsims <- length(DF)
+      radius = 2 + (nsims < 5000) + (nsims < 1000) + (nsims < 500) + (nsims < 100)         
+    }
+    plot(x = DF, y = w, ylab = "", cex = radius/2, pch = 16, col = cat2Test$colors,  
+         xlab = "Difference in Proportions", main = "Sampling Distribution")
+   }, height = 425, width = 750)
   
 }
 
